@@ -32,6 +32,7 @@
                   BorderThickness="1"
                   BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                   SelectionMode="Single">
             <ListView.Resources>
                 <ItemsPanelTemplate x:Key="ListPanel">
@@ -42,14 +43,13 @@
                 </ItemsPanelTemplate>
             </ListView.Resources>
             <ListView.Header>
-                <Grid Padding="12,4,12,4" ColumnDefinitions="*,70,90,160,110,80,40">
+                <Grid Padding="12,4,12,4" ColumnDefinitions="*,70,100,170,100,220">
                     <TextBlock Grid.Column="0" Text="Name" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock Grid.Column="1" Text="Size" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock Grid.Column="2" Text="Resolution" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock Grid.Column="3" Text="Format" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock Grid.Column="4" Text="Color Space" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock Grid.Column="5" Text="Status" Style="{StaticResource CaptionTextBlockStyle}" />
-                    <TextBlock Grid.Column="6" Text="" />
                 </Grid>
             </ListView.Header>
         </ListView>

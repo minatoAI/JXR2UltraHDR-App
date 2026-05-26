@@ -477,16 +477,15 @@ namespace winrt::JXR2UltraHDR::implementation
             auto item = ListViewItem();
 
             auto grid = Grid();
-            for (int c = 0; c < 7; c++)
+            for (int c = 0; c < 6; c++)
                 grid.ColumnDefinitions().Append(ColumnDefinition());
-            // Column widths: *, 70, 90, 160, 110, 80, 40
-            grid.ColumnDefinitions().GetAt(0).Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
-            grid.ColumnDefinitions().GetAt(1).Width({ 70, GridUnitType::Pixel });
-            grid.ColumnDefinitions().GetAt(2).Width({ 90, GridUnitType::Pixel });
-            grid.ColumnDefinitions().GetAt(3).Width({ 160, GridUnitType::Pixel });
-            grid.ColumnDefinitions().GetAt(4).Width({ 110, GridUnitType::Pixel });
-            grid.ColumnDefinitions().GetAt(5).Width({ 80, GridUnitType::Pixel });
-            grid.ColumnDefinitions().GetAt(6).Width({ 40, GridUnitType::Pixel });
+            // Column widths: Name adaptive, rest fixed (header and rows must match)
+            grid.ColumnDefinitions().GetAt(0).Width({1, GridUnitType::Star});
+            grid.ColumnDefinitions().GetAt(1).Width({70, GridUnitType::Pixel});
+            grid.ColumnDefinitions().GetAt(2).Width({100, GridUnitType::Pixel});
+            grid.ColumnDefinitions().GetAt(3).Width({170, GridUnitType::Pixel});
+            grid.ColumnDefinitions().GetAt(4).Width({100, GridUnitType::Pixel});
+            grid.ColumnDefinitions().GetAt(5).Width({220, GridUnitType::Pixel});
 
             // Name
             auto nameBlock = TextBlock();
@@ -545,17 +544,12 @@ namespace winrt::JXR2UltraHDR::implementation
             Grid::SetColumn(statusBlock, 5);
             grid.Children().Append(statusBlock);
 
-            // Remove button
-            auto removeBtn = Button();
-            removeBtn.Content(winrt::box_value(L"\u2715"));
-            removeBtn.Width(32); removeBtn.Height(32);
-            removeBtn.Padding(Microsoft::UI::Xaml::Thickness());
-            removeBtn.HorizontalAlignment(HorizontalAlignment::Right);
-            removeBtn.IsEnabled(!m_converting.load());
-            Grid::SetColumn(removeBtn, 6);
-
+            // Right-click context menu — Remove from queue
+            auto flyout = MenuFlyout();
+            auto removeItem = MenuFlyoutItem();
+            removeItem.Text(L"Remove from queue");
             size_t idx = i;
-            removeBtn.Click([this, idx](IInspectable const&, RoutedEventArgs const&) {
+            removeItem.Click([this, idx](IInspectable const&, RoutedEventArgs const&) {
                 {
                     std::lock_guard<std::mutex> lock(m_mutex);
                     if (idx < m_entries.size())
@@ -563,8 +557,9 @@ namespace winrt::JXR2UltraHDR::implementation
                 }
                 DispatcherQueue().TryEnqueue([this]() { RebuildListView(); UpdateUIState(); });
             });
+            flyout.Items().Append(removeItem);
+            item.ContextFlyout(flyout);
 
-            grid.Children().Append(removeBtn);
             item.Content(grid);
             item.HorizontalContentAlignment(HorizontalAlignment::Stretch);
             FileListView().Items().Append(item);
