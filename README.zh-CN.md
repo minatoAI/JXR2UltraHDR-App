@@ -97,7 +97,24 @@ Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
 
 不执行此步骤，Windows 安装 MSIX 时会提示"证书不受信任"。
 
-### 3. 删除证书（不再需要时）
+### 3. 验证签名（可选）
+
+构建或下载已签名的 MSIX 后，可以通过以下方式验证：
+
+**方法 A — 文件属性（图形界面）**
+1. 右键 `.msix` 文件 → **属性**
+2. 切换到 **数字签名** 标签页
+3. 选中签名条目，点击 **详细信息**
+4. 如果证书已受信任，会显示"该数字签名正常"；否则会显示签名者信息
+
+**方法 B — signtool（命令行）**
+```cmd
+signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
+```
+
+注意：自签名证书未安装到受信任存储时，`signtool verify` 会报告"不受信任的提供程序"。这是正常的——MSIX 仍然已签名且可安装。
+
+### 4. 删除证书（不再需要时）
 
 ```powershell
 # 从 LocalMachine\TrustedPeople 移除
