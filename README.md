@@ -88,6 +88,45 @@ If you already cloned without `--recursive`:
 git submodule update --init --recursive
 ```
 
+## Known Issues & Troubleshooting
+
+### CRT RuntimeLibrary Mismatch (LNK2038)
+
+**Symptom**: Linker error `LNK2038: RuntimeLibrary mismatch — MT_StaticRelease vs MD_DynamicRelease` in `uhdr-static.lib`.
+
+**Cause**: libultrahdr forces `/MT` (static CRT) for static library builds on MSVC. The WinUI project requires `/MD` (dynamic CRT).
+
+**Fix** (already applied in JXR2UltraHDR-lib): CMakeLists.txt overrides the CRT for `uhdr-static`, `core`, and `image_io` targets after `add_subdirectory` when `BUILD_FOR_WINUI=ON`. If you encounter this in a fresh clone, ensure you're running the CMake build with `-DBUILD_FOR_WINUI=ON`.
+
+### Proxy Required for First Build
+
+libultrahdr fetches libjpeg-turbo via CMake `FetchContent` (git clone) during the first CMake configure. In regions with slow GitHub access, set:
+
+```cmd
+set http_proxy=http://127.0.0.1:10808
+set https_proxy=http://127.0.0.1:10808
+```
+
+before running `scripts\build_lib.bat`. The proxy is only needed once (turbojpeg is cached locally in the build tree).
+
+### NASM Not Found (TurboJPEG without SIMD)
+
+**Symptom**: CMake warning `NASM compiler not found — SIMD extensions disabled`.
+
+**Impact**: JPEG encoding/decoding performance is ~20-30% lower without SIMD. This does **not** affect correctness.
+
+**Fix**: Install NASM (https://nasm.us) and add it to PATH before rebuilding the core library:
+
+```cmd
+cmake --build ThirdParty\JXR2UltraHDR-lib\build --config Release
+```
+
+(The turbojpeg ExternalProject won't re-detect NASM unless its build directory is cleaned.)
+
+### Warning C4819 / C4828 (Code Page)
+
+jxrlib headers contain non-UTF-8 characters that trigger code-page warnings on Chinese/Japanese Windows. These are harmless and originate from Microsoft's original JXR reference implementation.
+
 ## API
 
 The WinUI app communicates with the core library through a plain C ABI (`ConverterAPI.h` / `ConverterAPI.cpp`):
