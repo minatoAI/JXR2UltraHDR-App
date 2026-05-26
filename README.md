@@ -90,15 +90,54 @@ git submodule update --init --recursive
 
 ## Known Issues & Troubleshooting
 
+### Clone / Submodule
+
+**Submodule not checked out**: If you cloned without `--recursive`, run:
+
+```cmd
+git submodule update --init --recursive
+```
+
+**Slow clone or submodule fetch**: GitHub access in some regions is slow. Set a proxy and retry:
+
+```cmd
+set http_proxy=http://your-proxy:port
+set https_proxy=http://your-proxy:port
+git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
+```
+
+### NuGet
+
+**'nuget' is not recognized as a command**: Visual Studio 2022 no longer bundles `nuget.exe`. Download it from [nuget.org/downloads](https://www.nuget.org/downloads) and place it in your PATH, or copy `nuget.exe` into the solution root.
+
+**NuGet restore fails / "缺少 NuGet 程序包"**: Ensure you run `nuget restore` from the solution root (where `nuget.config` is located):
+
+```cmd
+cd \path\to\JXR2UltraHDR-App
+nuget restore JXR2UltraHDR.sln
+```
+
+The project's `nuget.config` sets `repositoryPath=JXR2UltraHDR.WinUI\packages`, so packages go to the expected location.
+
+**NuGet restore slow**: This is normal on first run — NuGet downloads ~16 packages (~150MB total). If behind a proxy, set `http_proxy` / `https_proxy` before running restore.
+
 ### CRT RuntimeLibrary Mismatch (LNK2038)
 
 **Symptom**: Linker error `LNK2038: RuntimeLibrary mismatch — MT_StaticRelease vs MD_DynamicRelease` in `uhdr-static.lib`.
 
-**Cause**: libultrahdr forces `/MT` (static CRT) for static library builds on MSVC. The WinUI project requires `/MD` (dynamic CRT).
+**Cause**: libultrahdr forces `/MT` (static CRT) for static library builds on MSVC (line 211 of its CMakeLists.txt). The WinUI project requires `/MD` (dynamic CRT).
 
-**Fix** (already applied in JXR2UltraHDR-lib): CMakeLists.txt overrides the CRT for `uhdr-static`, `core`, and `image_io` targets after `add_subdirectory` when `BUILD_FOR_WINUI=ON`. If you encounter this in a fresh clone, ensure you're running the CMake build with `-DBUILD_FOR_WINUI=ON`.
+**Fix** (already applied in JXR2UltraHDR-lib `CMakeLists.txt`): After `add_subdirectory`, the CRT is overridden for `uhdr-static`, `core`, and `image_io` targets when `BUILD_FOR_WINUI=ON`. If you encounter this, ensure you run CMake with `-DBUILD_FOR_WINUI=ON`.
 
-### Proxy Required for First Build
+### LNK4098 "default library 'LIBCMT' conflicts"
+
+**Symptom**: Linker warning `LNK4098` during WinUI build.
+
+**Cause**: libjpeg-turbo (built via FetchContent) uses `/MT` while the WinUI project uses `/MD`. Since turbojpeg is linked through `uhdr-static`, the conflict is contained — the warning is harmless and does not affect the binary.
+
+**Fix**: None needed. This is a benign warning. To eliminate it, install NASM and rebuild — turbojpeg will re-detect and the CRT handling may change.
+
+### Proxy Required for Core Library First Build
 
 libultrahdr fetches libjpeg-turbo via CMake `FetchContent` (git clone) during the first CMake configure. If you need a proxy:
 
@@ -107,34 +146,47 @@ set http_proxy=http://your-proxy-address:port
 set https_proxy=http://your-proxy-address:port
 ```
 
-before running `scripts\build_lib.bat`. The proxy is only needed once (turbojpeg is cached locally in the build tree). NuGet restore may also need these if your network requires it.
-
-### NuGet Packages Path
-
-`nuget restore` places packages in the project directory (`JXR2UltraHDR.WinUI\packages\`) automatically because the project includes a `nuget.config` with `repositoryPath=packages`. If you run restore from a different location, cd to the solution root first:
-
-```cmd
-cd \path\to\JXR2UltraHDR-App
-nuget restore JXR2UltraHDR.sln
-```
+before running `scripts\build_lib.bat`. The proxy is only needed once — turbojpeg is cached locally in the build tree for subsequent builds.
 
 ### NASM Not Found (TurboJPEG without SIMD)
 
 **Symptom**: CMake warning `NASM compiler not found — SIMD extensions disabled`.
 
-**Impact**: JPEG encoding/decoding performance is ~20-30% lower without SIMD. This does **not** affect correctness.
+**Impact**: JPEG encoding/decoding performance is ~20-30% lower without SIMD. Correctness is unaffected.
 
-**Fix**: Install NASM (https://nasm.us) and add it to PATH before rebuilding the core library:
+**Fix**: Install NASM (https://nasm.us) and add it to PATH, then rebuild:
 
 ```cmd
-cmake --build ThirdParty\JXR2UltraHDR-lib\build --config Release
+cd ThirdParty\JXR2UltraHDR-lib\build
+cmake .. -G "Visual Studio 17 2022" -A x64 -DBUILD_FOR_WINUI=ON
+cmake --build . --config Release
 ```
 
-(The turbojpeg ExternalProject won't re-detect NASM unless its build directory is cleaned.)
+(Note: turbojpeg is built via FetchContent as an ExternalProject — it checks for NASM only during its own CMake configure step, so you may need to clean the build directory if NASM wasn't present initially.)
 
 ### Warning C4819 / C4828 (Code Page)
 
-jxrlib headers contain non-UTF-8 characters that trigger code-page warnings on Chinese/Japanese Windows. These are harmless and originate from Microsoft's original JXR reference implementation.
+**Symptom**: Warnings `C4819` ("file contains characters not representable in current code page") and `C4828` ("file contains character starting at offset ... invalid in current source character set").
+
+**Cause**: Microsoft's original JXR reference implementation headers (`guiddef.h`, `JXRGlue.h`, etc.) contain non-UTF-8 encoded characters (copyright symbols and other bytes). These are third-party files and cannot be modified.
+
+**Impact**: Harmless. The warnings do not affect compilation or runtime behavior.
+
+### MSIX Signing Fails / Certificate Missing
+
+**Symptom**: MSIX package is built but not signed.
+
+**Cause**: The vcxproj contains a `SignMsiXPackage` target that runs only if `JXR2UltraHDR_devcert.pfx` exists in the project directory. If no certificate is present, the target is skipped (not an error).
+
+**Fix**: Generate a self-signed certificate (see "MSIX Signing" section above) and place it as `JXR2UltraHDR_devcert.pfx` in the `JXR2UltraHDR.WinUI\` directory.
+
+### Build fails with "MSB8020: v143 build tools not found"
+
+**Symptom**: MSBuild error about missing platform toolset v143.
+
+**Cause**: The vcxproj targets `v143` platform toolset (VS 2022). Building with an older MSVC version fails.
+
+**Fix**: Open a **Developer Command Prompt for VS 2022** (not VS 2019 or a plain cmd.exe) before running the build commands. The VS 2022 Developer Command Prompt sets up the correct toolchain in PATH.
 
 ## API
 
