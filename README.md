@@ -66,15 +66,46 @@ msbuild JXR2UltraHDR.sln /p:Configuration=Release /p:Platform=x64
 
 ## MSIX Signing
 
-The build target signs the MSIX package if a certificate file `JXR2UltraHDR_devcert.pfx` is present in the project root (`JXR2UltraHDR.WinUI\`). To generate a self-signed certificate:
+The build target signs the MSIX package if a certificate file `JXR2UltraHDR_devcert.pfx` is present in the project root (`JXR2UltraHDR.WinUI\\`).
+
+### 1. Generate a Self-Signed Certificate
+
+Run in PowerShell as **administrator**:
 
 ```powershell
-New-SelfSignedCertificate -Type Custom -Subject "CN=JXR2UltraHDR" -KeyUsage DigitalSignature `
+# Create certificate in CurrentUser\My store
+$cert = New-SelfSignedCertificate -Type Custom -Subject "CN=JXR2UltraHDR" -KeyUsage DigitalSignature `
   -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") `
-  -CertStoreLocation "Cert:\CurrentUser\My" | Format-List Subject, Thumbprint
+  -CertStoreLocation "Cert:\CurrentUser\My"
+
+# Export to PFX (password: password123)
+$cert | Export-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
 ```
 
-Then export to `JXR2UltraHDR_devcert.pfx` with password `password123`.
+Place the exported `JXR2UltraHDR_devcert.pfx` in the `JXR2UltraHDR.WinUI\` directory.
+
+### 2. Install Certificate for Sideloading
+
+On each machine that will install the MSIX, run PowerShell as **administrator**:
+
+```powershell
+# Import the certificate to LocalMachine\TrustedPeople (required for MSIX trust)
+Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
+  -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" `
+  -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
+```
+
+Without this step, Windows will show a "certificate not trusted" warning when installing the MSIX.
+
+### 3. Remove Certificate (when no longer needed)
+
+```powershell
+# Remove from LocalMachine\TrustedPeople
+Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
+
+# Remove from CurrentUser\My (if you generated it on this machine)
+Get-ChildItem "Cert:\CurrentUser\My" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
+```
 
 ## Cloning
 
