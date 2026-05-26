@@ -11,7 +11,7 @@ WinUI 3 desktop GUI for converting HDR-format JXR/WDP images to Ultra HDR JPEG.
 - Windows App SDK 2.1.3 (restored via NuGet)
 - CMake 3.20+ (for building the core library)
 - Git
-- NuGet CLI (`nuget.exe`) — available in VS Developer Command Prompt
+|- NuGet CLI — download `nuget.exe` from [nuget.org/downloads](https://www.nuget.org/downloads) and place it in PATH (not bundled with VS 2022)
 
 ## Repository Structure
 
@@ -107,7 +107,16 @@ set http_proxy=http://your-proxy-address:port
 set https_proxy=http://your-proxy-address:port
 ```
 
-before running `scripts\build_lib.bat`. The proxy is only needed once (turbojpeg is cached locally in the build tree).
+before running `scripts\build_lib.bat`. The proxy is only needed once (turbojpeg is cached locally in the build tree). NuGet restore may also need these if your network requires it.
+
+### NuGet Packages Path
+
+`nuget restore` places packages in the project directory (`JXR2UltraHDR.WinUI\packages\`) automatically because the project includes a `nuget.config` with `repositoryPath=packages`. If you run restore from a different location, cd to the solution root first:
+
+```cmd
+cd \path\to\JXR2UltraHDR-App
+nuget restore JXR2UltraHDR.sln
+```
 
 ### NASM Not Found (TurboJPEG without SIMD)
 
