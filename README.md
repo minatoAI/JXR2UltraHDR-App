@@ -100,11 +100,11 @@ git submodule update --init --recursive
 
 ### Proxy Required for First Build
 
-libultrahdr fetches libjpeg-turbo via CMake `FetchContent` (git clone) during the first CMake configure. In regions with slow GitHub access, set:
+libultrahdr fetches libjpeg-turbo via CMake `FetchContent` (git clone) during the first CMake configure. If you need a proxy:
 
 ```cmd
-set http_proxy=http://127.0.0.1:10808
-set https_proxy=http://127.0.0.1:10808
+set http_proxy=http://your-proxy-address:port
+set https_proxy=http://your-proxy-address:port
 ```
 
 before running `scripts\build_lib.bat`. The proxy is only needed once (turbojpeg is cached locally in the build tree).
