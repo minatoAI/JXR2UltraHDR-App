@@ -139,7 +139,7 @@ git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
 
 ### NuGet
 
-**'nuget' is not recognized as a command**: Visual Studio 2022 no longer bundles `nuget.exe`. Download it from [nuget.org/downloads](https://www.nuget.org/downloads) and place it in your PATH, or copy `nuget.exe` into the solution root.
+**'nuget' is not recognized as a command**: Download `nuget.exe` from [nuget.org/downloads](https://www.nuget.org/downloads) and place it in your PATH, or copy it into the solution root.
 
 **NuGet restore fails / "缺少 NuGet 程序包"**: Ensure you run `nuget restore` from the solution root (where `nuget.config` is located):
 
@@ -164,13 +164,11 @@ The project's `nuget.config` sets `repositoryPath=JXR2UltraHDR.WinUI\packages`, 
 
 **Symptom**: Linker warning `LNK4098` during WinUI build.
 
-**Cause**: libjpeg-turbo (built via FetchContent) uses `/MT` while the WinUI project uses `/MD`. Since turbojpeg is linked through `uhdr-static`, the conflict is contained — the warning is harmless and does not affect the binary.
-
-**Fix**: None needed. This is a benign warning. To eliminate it, install NASM and rebuild — turbojpeg will re-detect and the CRT handling may change.
+**Fix**: None needed. This warning is harmless and does not affect the binary.
 
 ### Proxy Required for Core Library First Build
 
-libultrahdr fetches libjpeg-turbo via CMake `FetchContent` (git clone) during the first CMake configure. If you need a proxy:
+libultrahdr downloads libjpeg-turbo via CMake `ExternalProject_Add` (git clone) during the first `cmake --build`. If you need a proxy:
 
 ```cmd
 set http_proxy=http://your-proxy-address:port
@@ -193,7 +191,7 @@ cmake .. -G "Visual Studio 17 2022" -A x64 -DBUILD_FOR_WINUI=ON
 cmake --build . --config Release
 ```
 
-(Note: turbojpeg is built via FetchContent as an ExternalProject — it checks for NASM only during its own CMake configure step, so you may need to clean the build directory if NASM wasn't present initially.)
+(Note: turbojpeg is built via `ExternalProject_Add` — it checks for NASM only during its own CMake configure step, so you may need to clean the build directory if NASM wasn't present initially.)
 
 ### Warning C4819 / C4828 (Code Page)
 
@@ -213,11 +211,9 @@ cmake --build . --config Release
 
 ### Build fails with "MSB8020: v143 build tools not found"
 
-**Symptom**: MSBuild error about missing platform toolset v143.
+**Symptom**: MSBuild error `MSB8020: The build tools for v143 (Platform Toolset = 'v143') cannot be found`.
 
-**Cause**: The vcxproj targets `v143` platform toolset (VS 2022). Building with an older MSVC version fails.
-
-**Fix**: Open a **Developer Command Prompt for VS 2022** (not VS 2019 or a plain cmd.exe) before running the build commands. The VS 2022 Developer Command Prompt sets up the correct toolchain in PATH.
+**Fix**: Ensure you have **Visual Studio 2022** installed with the **Desktop development with C++** workload, and run the build from a **Developer Command Prompt for VS 2022**.
 
 ## API
 

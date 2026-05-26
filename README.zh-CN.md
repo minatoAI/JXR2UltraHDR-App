@@ -135,7 +135,7 @@ git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
 
 ### NuGet
 
-**'nuget' 不是可识别的命令**：VS 2022 不再自带 `nuget.exe`。从 [nuget.org/downloads](https://www.nuget.org/downloads) 下载后放入 PATH。
+**'nuget' 不是可识别的命令**：从 [nuget.org/downloads](https://www.nuget.org/downloads) 下载 `nuget.exe` 并加入 PATH，或放入解决方案根目录。
 
 **缺少 NuGet 程序包**：确保在解决方案根目录（`nuget.config` 所在目录）运行 restore：
 
@@ -160,13 +160,11 @@ nuget restore JXR2UltraHDR.sln
 
 **症状**：编译 WinUI 时出现链接器警告 LNK4098。
 
-**原因**：libjpeg-turbo（通过 FetchContent 编译）使用 `/MT`，而 WinUI 项目使用 `/MD`。由于 turbojpeg 是经过 `uhdr-static` 链接的，冲突被限制在库内部，不影响最终可执行文件。
-
-**解决方法**：无需处理，此警告无害。如果在意，安装 NASM 后重新编译即可。
+**解决方法**：无需处理，此警告无害。
 
 ### 首次编译核心库需要代理
 
-libultrahdr 会在首次 CMake 配置时通过 `FetchContent` 拉取 libjpeg-turbo（git clone）。如需代理：
+libultrahdr 会在首次 `cmake --build` 时通过 `ExternalProject_Add` 下载 libjpeg-turbo（git clone）。如需代理：
 
 ```cmd
 set http_proxy=http://your-proxy-address:port
@@ -189,7 +187,7 @@ cmake .. -G "Visual Studio 17 2022" -A x64 -DBUILD_FOR_WINUI=ON
 cmake --build . --config Release
 ```
 
-注意：turbojpeg 通过 FetchContent 的 ExternalProject 编译，只在它自己的 CMake 配置阶段检测 NASM。如果初次编译时 NASM 未安装，后续即使安装了 NASM 也需要清理构建目录才能重新检测到。
+注意：turbojpeg 通过 `ExternalProject_Add` 编译，只在它自己的 CMake 配置阶段检测 NASM。如果初次编译时 NASM 未安装，后续即使安装了 NASM 也需要清理构建目录才能重新检测到。
 
 ### 代码页警告 C4819 / C4828
 
@@ -209,11 +207,9 @@ cmake --build . --config Release
 
 ### 编译失败："MSB8020: v143 build tools not found"
 
-**症状**：MSBuild 报错找不到 v143 平台工具集。
+**症状**：MSBuild 报错 `MSB8020: The build tools for v143 (Platform Toolset = 'v143') cannot be found`。
 
-**原因**：vcxproj 目标为 `v143`（VS 2022），使用旧版 MSVC 编译会失败。
-
-**解决方法**：一定要在 **VS 2022 开发者命令提示符**（而非 VS 2019 或普通 cmd.exe）中执行构建。
+**解决方法**：确保已安装 **Visual Studio 2022** 并勾选 **使用 C++ 的桌面开发** 工作负载，且在 **VS 2022 开发者命令提示符** 中执行构建。
 
 ## API
 
