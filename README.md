@@ -97,17 +97,25 @@ Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
 
 Without this step, Windows will show a "certificate not trusted" warning when installing the MSIX.
 
-### 3. Verify Signature (optional)
+### 3. Verify Signature & Install Certificate (optional)
 
-After building or downloading the signed MSIX, you can verify the digital signature:
+After building or downloading the signed MSIX, you can verify and optionally install the certificate through the file's Properties:
 
-**Method A — File Properties (GUI)**
+**GUI — via File Properties**
 1. Right-click the `.msix` file → **Properties**
 2. Go to the **Digital Signatures** tab
 3. Select the signature entry and click **Details**
-4. You should see "This digital signature is OK" (if the certificate is trusted) or information about the signer
+4. In the Digital Signature Details dialog, click **View Certificate**
+5. In the Certificate dialog, click **Install Certificate...**
+6. Certificate Import Wizard opens:
+   - Choose **Local Machine** → Next (requires admin)
+   - Choose **Place all certificates in the following store**
+   - Click **Browse** → select **Trusted People** → OK → Next → Finish
+7. The certificate is now trusted on this machine — the MSIX will install without warnings
 
-**Method B — signtool (CLI)**
+> Alternatively, use the PowerShell method on p.2 (MSIX Signing → Install Certificate for Sideloading).
+
+**CLI — signtool verify**
 ```cmd
 signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
 ```
