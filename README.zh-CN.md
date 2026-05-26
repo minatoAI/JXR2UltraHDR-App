@@ -2,17 +2,6 @@
 
 将 HDR 格式的 JPEG XR（.jxr / .wdp）图像转换为 Ultra HDR JPEG（.jpg）的 WinUI 3 桌面 GUI 工具。
 
-## 系统要求
-
-- Windows 10 2004+（build 19041）或 Windows 11
-- Visual Studio 2022，需安装以下工作负载：
-  - **使用 C++ 的桌面开发**
-  - **通用 Windows 平台 (UWP) 开发**（用于 MSIX 打包支持）
-- Windows App SDK 2.1.3（通过 NuGet 自动恢复）
-- CMake 3.20+（用于编译核心转换库）
-- Git
-- NuGet CLI — 从 [nuget.org/downloads](https://www.nuget.org/downloads) 下载 `nuget.exe` 并加入 PATH（VS 2022 不再自带）
-
 ## 仓库结构
 
 ```
@@ -27,6 +16,107 @@ JXR2UltraHDR-App/
 │       └── ThirdParty/
 │           ├── jxrlib/        ← JPEG XR 编解码器
 │           └── libultrahdr/   ← Ultra HDR 编解码器
+```
+
+## 系统要求
+
+- Windows 10 2004+（build 19041）或 Windows 11
+- Visual Studio 2022，需安装以下工作负载：
+  - **使用 C++ 的桌面开发**
+  - **通用 Windows 平台 (UWP) 开发**（用于 MSIX 打包支持）
+- Windows App SDK 2.1.3（通过 NuGet 自动恢复）
+- CMake 3.20+（用于编译核心转换库）
+- Git
+- NuGet CLI — 从 [nuget.org/downloads](https://www.nuget.org/downloads) 下载 `nuget.exe` 并加入 PATH（VS 2022 不再自带）
+
+## 克隆
+
+```cmd
+git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
+```
+
+如果已克隆但忘了加 `--recursive`：
+
+```cmd
+git submodule update --init --recursive
+```
+
+## MSIX 签名
+
+编译时如果项目目录（`JXR2UltraHDR.WinUI\`）下存在 `JXR2UltraHDR_devcert.pfx` 证书文件，会自动对 MSIX 包签名。
+
+### 1. 生成自签名证书
+
+以**管理员身份**运行 PowerShell：
+
+```powershell
+# 在 CurrentUser\My 存储中创建证书
+$cert = New-SelfSignedCertificate -Type Custom -Subject "CN=JXR2UltraHDR" -KeyUsage DigitalSignature `
+  -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") `
+  -CertStoreLocation "Cert:\CurrentUser\My"
+
+# 导出为 PFX（密码：password123）
+$cert | Export-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
+```
+
+将导出的 `JXR2UltraHDR_devcert.pfx` 放入 `JXR2UltraHDR.WinUI\` 目录。
+
+### 2. 安装证书（旁加载用）
+
+在每台需要安装 MSIX 的机器上，以**管理员身份**运行 PowerShell：
+
+```powershell
+# 导入证书到 LocalMachine\TrustedPeople（MSIX 信任必需）
+Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
+  -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" `
+  -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
+```
+
+不执行此步骤，Windows 会阻止安装，提示"无法验证发布者证书"。
+
+### 3. 验证签名与安装证书（可选）
+
+构建或下载已签名的 MSIX 后，可以通过文件属性查看签名并通过向导安装证书：
+
+**方法 — 文件属性（图形界面）**
+1. 右键 `.msix` 文件 → **属性**
+2. 切换到 **数字签名** 标签页
+3. 选中签名条目，点击 **详细信息**
+4. 在数字签名详细信息对话框中，点击 **查看证书**
+5. 在证书对话框中，点击 **安装证书...**
+6. 证书导入向导弹出：
+   - 存储位置选择 **本地计算机** → 下一步（需要管理员权限）
+   - 选择 **将所有的证书放入下列存储**
+   - 点击 **浏览** → 选择 **受信任人员** → 确定 → 下一步 → 完成
+7. 安装完成后，该证书在此机器上受信任，再次安装 MSIX 时不会出现警告
+
+> 也可使用第 2 节（安装证书）中的 PowerShell 方法。
+
+**命令行 — signtool verify**
+```cmd
+signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
+```
+
+注意：自签名证书未安装到受信任存储时，`signtool verify` 会报告"不受信任的提供程序"，且 Windows **会阻止安装** MSIX，提示"无法验证发布者证书"。必须先通过上方第 2 节或第 3 节的 GUI 方法将证书安装到 `LocalMachine\TrustedPeople`。
+
+### 4. 删除证书（不再需要时）
+
+**图形界面 — certlm.msc**
+1. 按 **Win + R**，输入 `certlm.msc`，回车
+2. 展开 **受信任人员** → **证书**
+3. 找到使用者为 `CN=JXR2UltraHDR` 的证书
+4. 右键 → **删除** → 是
+5. 如果还需从个人存储删除：展开 **个人** → **证书**，找到并删除同一条目
+
+> `certlm.msc` 是本地计算机证书管理器，在此删除影响本机所有用户。
+
+**PowerShell**
+```powershell
+# 从 LocalMachine\TrustedPeople 移除
+Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
+
+# 从 CurrentUser\My 移除（如果是在本机生成的）
+Get-ChildItem "Cert:\CurrentUser\My" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
 ```
 
 ## 构建步骤
@@ -63,96 +153,6 @@ msbuild JXR2UltraHDR.sln /p:Configuration=Release /p:Platform=x64
 
 - MSIX 安装包：`AppPackages\JXR2UltraHDR.WinUI\`
 - 核心库：`ThirdParty\JXR2UltraHDR-lib\build\Release\`
-
-## MSIX 签名
-
-编译时如果项目目录（`JXR2UltraHDR.WinUI\`）下存在 `JXR2UltraHDR_devcert.pfx` 证书文件，会自动对 MSIX 包签名。
-
-### 1. 生成自签名证书
-
-以**管理员身份**运行 PowerShell：
-
-```powershell
-# 在 CurrentUser\My 存储中创建证书
-$cert = New-SelfSignedCertificate -Type Custom -Subject "CN=JXR2UltraHDR" -KeyUsage DigitalSignature `
-  -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") `
-  -CertStoreLocation "Cert:\CurrentUser\My"
-
-# 导出为 PFX（密码：password123）
-$cert | Export-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
-```
-
-将导出的 `JXR2UltraHDR_devcert.pfx` 放入 `JXR2UltraHDR.WinUI\` 目录。
-
-### 2. 安装证书（旁加载用）
-
-在每台需要安装 MSIX 的机器上，以**管理员身份**运行 PowerShell：
-
-```powershell
-# 导入证书到 LocalMachine\TrustedPeople（MSIX 信任必需）
-Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
-  -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" `
-  -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
-```
-
-不执行此步骤，Windows 安装 MSIX 时会提示"证书不受信任"。
-
-### 3. 验证签名与安装证书（可选）
-
-构建或下载已签名的 MSIX 后，可以通过文件属性查看签名并通过向导安装证书：
-
-**方法 — 文件属性（图形界面）**
-1. 右键 `.msix` 文件 → **属性**
-2. 切换到 **数字签名** 标签页
-3. 选中签名条目，点击 **详细信息**
-4. 在数字签名详细信息对话框中，点击 **查看证书**
-5. 在证书对话框中，点击 **安装证书...**
-6. 证书导入向导弹出：
-   - 存储位置选择 **本地计算机** → 下一步（需要管理员权限）
-   - 选择 **将所有的证书放入下列存储**
-   - 点击 **浏览** → 选择 **受信任人员** → 确定 → 下一步 → 完成
-7. 安装完成后，该证书在此机器上受信任，再次安装 MSIX 时不会出现警告
-
-> 也可使用第 2 节（安装证书）中的 PowerShell 方法。
-
-**命令行 — signtool verify**
-```cmd
-signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
-```
-
-注意：自签名证书未安装到受信任存储时，`signtool verify` 会报告"不受信任的提供程序"，且 Windows **会阻止安装** MSIX，提示"无法验证发布者证书"。必须先通过上方第 2 节（安装证书）或第 3 节的 GUI 方法将证书安装到 `LocalMachine\TrustedPeople`。
-
-### 4. 删除证书（不再需要时）
-
-**图形界面 — certlm.msc**
-1. 按 **Win + R**，输入 `certlm.msc`，回车
-2. 展开 **受信任人员** → **证书**
-3. 找到使用者为 `CN=JXR2UltraHDR` 的证书
-4. 右键 → **删除** → 是
-5. 如果还需从个人存储删除：展开 **个人** → **证书**，找到并删除同一条目
-
-> `certlm.msc` 是本地计算机证书管理器，在此删除影响本机所有用户。
-
-**PowerShell**
-```powershell
-# 从 LocalMachine\TrustedPeople 移除
-Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
-
-# 从 CurrentUser\My 移除（如果是在本机生成的）
-Get-ChildItem "Cert:\CurrentUser\My" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
-```
-
-## 克隆
-
-```cmd
-git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
-```
-
-如果已克隆但忘了加 `--recursive`：
-
-```cmd
-git submodule update --init --recursive
-```
 
 ## 常见问题与排查
 

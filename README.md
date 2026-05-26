@@ -2,17 +2,6 @@
 
 WinUI 3 desktop GUI for converting HDR-format JXR/WDP images to Ultra HDR JPEG.
 
-## Prerequisites
-
-- Windows 10 2004+ (build 19041) or Windows 11
-- Visual Studio 2022 with the following workloads:
-  - **Desktop development with C++**
-  - **Universal Windows Platform (UWP) development** (for MSIX packaging support)
-- Windows App SDK 2.1.3 (restored via NuGet)
-- CMake 3.20+ (for building the core library)
-- Git
-|- NuGet CLI — download `nuget.exe` from [nuget.org/downloads](https://www.nuget.org/downloads) and place it in PATH (not bundled with VS 2022)
-
 ## Repository Structure
 
 ```
@@ -27,6 +16,107 @@ JXR2UltraHDR-App/
 │       └── ThirdParty/
 │           ├── jxrlib/        ← JPEG XR codec
 │           └── libultrahdr/   ← Ultra HDR codec
+```
+
+## Prerequisites
+
+- Windows 10 2004+ (build 19041) or Windows 11
+- Visual Studio 2022 with the following workloads:
+  - **Desktop development with C++**
+  - **Universal Windows Platform (UWP) development** (for MSIX packaging support)
+- Windows App SDK 2.1.3 (restored via NuGet)
+- CMake 3.20+ (for building the core library)
+- Git
+- NuGet CLI — download `nuget.exe` from [nuget.org/downloads](https://www.nuget.org/downloads) and place it in PATH (not bundled with VS 2022)
+
+## Cloning
+
+```cmd
+git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
+```
+
+If you already cloned without `--recursive`:
+
+```cmd
+git submodule update --init --recursive
+```
+
+## MSIX Signing
+
+The build target signs the MSIX package if a certificate file `JXR2UltraHDR_devcert.pfx` is present in the project root (`JXR2UltraHDR.WinUI\\`).
+
+### 1. Generate a Self-Signed Certificate
+
+Run in PowerShell as **administrator**:
+
+```powershell
+# Create certificate in CurrentUser\My store
+$cert = New-SelfSignedCertificate -Type Custom -Subject "CN=JXR2UltraHDR" -KeyUsage DigitalSignature `
+  -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") `
+  -CertStoreLocation "Cert:\CurrentUser\My"
+
+# Export to PFX (password: password123)
+$cert | Export-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
+```
+
+Place the exported `JXR2UltraHDR_devcert.pfx` in the `JXR2UltraHDR.WinUI\` directory.
+
+### 2. Install Certificate for Sideloading
+
+On each machine that will install the MSIX, run PowerShell as **administrator**:
+
+```powershell
+# Import the certificate to LocalMachine\TrustedPeople (required for MSIX trust)
+Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
+  -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" `
+  -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
+```
+
+Without this step, Windows will block installation with "publisher certificate could not be verified".
+
+### 3. Verify Signature & Install Certificate (optional)
+
+After building or downloading the signed MSIX, you can verify and optionally install the certificate through the file's Properties:
+
+**GUI — via File Properties**
+1. Right-click the `.msix` file → **Properties**
+2. Go to the **Digital Signatures** tab
+3. Select the signature entry and click **Details**
+4. In the Digital Signature Details dialog, click **View Certificate**
+5. In the Certificate dialog, click **Install Certificate...**
+6. Certificate Import Wizard opens:
+   - Choose **Local Machine** → Next (requires admin)
+   - Choose **Place all certificates in the following store**
+   - Click **Browse** → select **Trusted People** → OK → Next → Finish
+7. The certificate is now trusted on this machine — the MSIX will install without warnings
+
+> Alternatively, use the PowerShell method in step 2 above.
+
+**CLI — signtool verify**
+```cmd
+signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
+```
+
+Note: For a self-signed certificate not yet installed to a trusted store, `signtool verify` will report "not trusted by the trust provider", and Windows will **block installation** of the MSIX with "publisher certificate could not be verified". You must install the certificate to `LocalMachine\TrustedPeople` first (see step 2 or the GUI method above).
+
+### 4. Remove Certificate (when no longer needed)
+
+**GUI — certlm.msc**
+1. Press **Win + R**, type `certlm.msc`, press Enter
+2. Expand **Trusted People** → **Certificates**
+3. Find the certificate with subject `CN=JXR2UltraHDR`
+4. Right-click → **Delete** → Yes
+5. If you also want to remove from personal store: expand **Personal** → **Certificates**, find and delete the same entry
+
+> Tip: `certlm.msc` is the Local Machine certificate manager. Changes here affect all users on the machine.
+
+**PowerShell**
+```powershell
+# Remove from LocalMachine\TrustedPeople
+Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
+
+# Remove from CurrentUser\My (if you generated it on this machine)
+Get-ChildItem "Cert:\CurrentUser\My" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
 ```
 
 ## Building
@@ -63,96 +153,6 @@ msbuild JXR2UltraHDR.sln /p:Configuration=Release /p:Platform=x64
 
 - MSIX installer: `AppPackages\JXR2UltraHDR.WinUI\`
 - Core library: `ThirdParty\JXR2UltraHDR-lib\build\Release\`
-
-## MSIX Signing
-
-The build target signs the MSIX package if a certificate file `JXR2UltraHDR_devcert.pfx` is present in the project root (`JXR2UltraHDR.WinUI\\`).
-
-### 1. Generate a Self-Signed Certificate
-
-Run in PowerShell as **administrator**:
-
-```powershell
-# Create certificate in CurrentUser\My store
-$cert = New-SelfSignedCertificate -Type Custom -Subject "CN=JXR2UltraHDR" -KeyUsage DigitalSignature `
-  -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") `
-  -CertStoreLocation "Cert:\CurrentUser\My"
-
-# Export to PFX (password: password123)
-$cert | Export-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
-```
-
-Place the exported `JXR2UltraHDR_devcert.pfx` in the `JXR2UltraHDR.WinUI\` directory.
-
-### 2. Install Certificate for Sideloading
-
-On each machine that will install the MSIX, run PowerShell as **administrator**:
-
-```powershell
-# Import the certificate to LocalMachine\TrustedPeople (required for MSIX trust)
-Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
-  -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" `
-  -Password (ConvertTo-SecureString "password123" -AsPlainText -Force)
-```
-
-Without this step, Windows will show a "certificate not trusted" warning when installing the MSIX.
-
-### 3. Verify Signature & Install Certificate (optional)
-
-After building or downloading the signed MSIX, you can verify and optionally install the certificate through the file's Properties:
-
-**GUI — via File Properties**
-1. Right-click the `.msix` file → **Properties**
-2. Go to the **Digital Signatures** tab
-3. Select the signature entry and click **Details**
-4. In the Digital Signature Details dialog, click **View Certificate**
-5. In the Certificate dialog, click **Install Certificate...**
-6. Certificate Import Wizard opens:
-   - Choose **Local Machine** → Next (requires admin)
-   - Choose **Place all certificates in the following store**
-   - Click **Browse** → select **Trusted People** → OK → Next → Finish
-7. The certificate is now trusted on this machine — the MSIX will install without warnings
-
-> Alternatively, use the PowerShell method on p.2 (MSIX Signing → Install Certificate for Sideloading).
-
-**CLI — signtool verify**
-```cmd
-signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
-```
-
-Note: For a self-signed certificate not yet installed to a trusted store, `signtool verify` will report "not trusted by the trust provider", and Windows will **block installation** of the MSIX with "publisher certificate could not be verified". You must install the certificate to `LocalMachine\TrustedPeople` first (see step 2 or the GUI method above).
-
-### 4. Remove Certificate (when no longer needed)
-
-**GUI — certlm.msc**
-1. Press **Win + R**, type `certlm.msc`, press Enter
-2. Expand **Trusted People** → **Certificates**
-3. Find the certificate with subject `CN=JXR2UltraHDR`
-4. Right-click → **Delete** → Yes
-5. If you also want to remove from personal store: expand **Personal** → **Certificates**, find and delete the same entry
-
-> Tip: `certlm.msc` is the Local Machine certificate manager. Changes here affect all users on the machine.
-
-**PowerShell**
-```powershell
-# Remove from LocalMachine\TrustedPeople
-Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
-
-# Remove from CurrentUser\My (if you generated it on this machine)
-Get-ChildItem "Cert:\CurrentUser\My" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
-```
-
-## Cloning
-
-```cmd
-git clone --recursive git@github.com:minatoAI/JXR2UltraHDR-App.git
-```
-
-If you already cloned without `--recursive`:
-
-```cmd
-git submodule update --init --recursive
-```
 
 ## Known Issues & Troubleshooting
 
