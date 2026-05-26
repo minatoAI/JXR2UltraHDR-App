@@ -1,0 +1,3 @@
+[submodule "ThirdParty/JXR2UltraHDR-lib"]
+	path = ThirdParty/JXR2UltraHDR-lib
+	url = git@github.com:minatoAI/JXR2UltraHDR-lib.git

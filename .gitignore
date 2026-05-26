@@ -1,0 +1,36 @@
+# Visual Studio (project-root)
+.vs/
+*.user
+*.suo
+*.db
+*.opendb
+*.ipch
+
+# Build outputs
+x64/
+x86/
+ARM64/
+Debug/
+Release/
+Generated Files/
+*.tlog
+*.lastbuildstate
+*.log
+*.ipdb
+*.iobj
+*.obj
+*.pdb
+*.lib
+*.exp
+
+# MSIX packaging artifacts
+AppPackages/
+
+# NuGet packages (restored on build)
+packages/
+
+# Certificate (contains private key — do NOT commit)
+*.pfx
+
+# CMake build artifacts (submodule)
+ThirdParty/JXR2UltraHDR-lib/build/

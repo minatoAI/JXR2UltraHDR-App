@@ -1,0 +1,72 @@
+<Window
+    x:Class="JXR2UltraHDR.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:JXR2UltraHDR"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="JXR2UltraHDR Converter">
+
+    <Grid Padding="12" RowDefinitions="Auto,Auto,*,Auto,Auto"
+          Loaded="OnWindowLoaded">
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="JXR2UltraHDR Converter" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="Drag &amp; drop .jxr / .wdp files to convert to Ultra HDR JPEG" Style="{StaticResource CaptionTextBlockStyle}" />
+        </StackPanel>
+
+        <!-- Output / Input directory row -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+            <TextBox x:Name="OutputDirBox" Header="Output directory" PlaceholderText="Same as input (auto)" MinWidth="300" />
+            <Button x:Name="BrowseOutputBtn" Content="Browse..." Click="OnBrowseOutput" VerticalAlignment="Bottom" />
+            <Button x:Name="AddFolderBtn" Content="Add Folder..." Click="OnAddFolder" VerticalAlignment="Bottom" />
+        </StackPanel>
+
+        <!-- File list with header -->
+        <ListView x:Name="FileListView" Grid.Row="2"
+                  AllowDrop="True"
+                  DragOver="OnDragOver"
+                  Drop="OnDrop"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  SelectionMode="Single">
+            <ListView.Resources>
+                <ItemsPanelTemplate x:Key="ListPanel">
+                    <ItemsStackPanel />
+                </ItemsPanelTemplate>
+                <ItemsPanelTemplate x:Key="GridPanel">
+                    <ItemsWrapGrid Orientation="Horizontal" ItemWidth="150" />
+                </ItemsPanelTemplate>
+            </ListView.Resources>
+            <ListView.Header>
+                <Grid Padding="12,4,12,4" ColumnDefinitions="*,70,90,160,110,80,40">
+                    <TextBlock Grid.Column="0" Text="Name" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Grid.Column="1" Text="Size" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Grid.Column="2" Text="Resolution" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Grid.Column="3" Text="Format" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Grid.Column="4" Text="Color Space" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Grid.Column="5" Text="Status" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Grid.Column="6" Text="" />
+                </Grid>
+            </ListView.Header>
+        </ListView>
+
+        <!-- Controls row -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button x:Name="ConvertBtn" Content="Convert All" Click="OnConvert" IsEnabled="False" />
+            <Button x:Name="CancelBtn" Content="Cancel" Click="OnCancel" IsEnabled="False" />
+            <Button x:Name="ClearBtn" Content="Clear" Click="OnClear" />
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}" />
+            <Border Width="1" Background="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="12,4" />
+            <Button x:Name="ListBtn" Content="List" Click="OnSwitchToList" />
+            <Button x:Name="ThumbBtn" Content="Thumbnails" Click="OnSwitchToThumbnail" />
+        </StackPanel>
+
+        <!-- Progress bar -->
+        <ProgressBar x:Name="OverallProgress" Grid.Row="4" Margin="0,4,0,0" Height="4" IsIndeterminate="False" />
+
+    </Grid>
+</Window>
