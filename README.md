@@ -120,10 +120,20 @@ After building or downloading the signed MSIX, you can verify and optionally ins
 signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
 ```
 
-Note: For a self-signed certificate not yet installed to a trusted store, `signtool verify` will report "not trusted by the trust provider". This is expected — the MSIX is still signed and installable.
+Note: For a self-signed certificate not yet installed to a trusted store, `signtool verify` will report "not trusted by the trust provider", and Windows will **block installation** of the MSIX with "publisher certificate could not be verified". You must install the certificate to `LocalMachine\TrustedPeople` first (see step 2 or the GUI method above).
 
 ### 4. Remove Certificate (when no longer needed)
 
+**GUI — certlm.msc**
+1. Press **Win + R**, type `certlm.msc`, press Enter
+2. Expand **Trusted People** → **Certificates**
+3. Find the certificate with subject `CN=JXR2UltraHDR`
+4. Right-click → **Delete** → Yes
+5. If you also want to remove from personal store: expand **Personal** → **Certificates**, find and delete the same entry
+
+> Tip: `certlm.msc` is the Local Machine certificate manager. Changes here affect all users on the machine.
+
+**PowerShell**
 ```powershell
 # Remove from LocalMachine\TrustedPeople
 Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item

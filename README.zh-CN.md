@@ -120,10 +120,20 @@ Import-PfxCertificate -FilePath JXR2UltraHDR_devcert.pfx `
 signtool verify /pa AppPackages\JXR2UltraHDR.WinUI\JXR2UltraHDR.WinUI_1.0.0.0_x64_Test\JXR2UltraHDR.WinUI_1.0.0.0_x64.msix
 ```
 
-注意：自签名证书未安装到受信任存储时，`signtool verify` 会报告"不受信任的提供程序"。这是正常的——MSIX 仍然已签名且可安装。
+注意：自签名证书未安装到受信任存储时，`signtool verify` 会报告"不受信任的提供程序"，且 Windows **会阻止安装** MSIX，提示"无法验证发布者证书"。必须先通过上方第 2 节（安装证书）或第 3 节的 GUI 方法将证书安装到 `LocalMachine\TrustedPeople`。
 
 ### 4. 删除证书（不再需要时）
 
+**图形界面 — certlm.msc**
+1. 按 **Win + R**，输入 `certlm.msc`，回车
+2. 展开 **受信任人员** → **证书**
+3. 找到使用者为 `CN=JXR2UltraHDR` 的证书
+4. 右键 → **删除** → 是
+5. 如果还需从个人存储删除：展开 **个人** → **证书**，找到并删除同一条目
+
+> `certlm.msc` 是本地计算机证书管理器，在此删除影响本机所有用户。
+
+**PowerShell**
 ```powershell
 # 从 LocalMachine\TrustedPeople 移除
 Get-ChildItem "Cert:\LocalMachine\TrustedPeople" | Where-Object { $_.Subject -eq "CN=JXR2UltraHDR" } | Remove-Item
