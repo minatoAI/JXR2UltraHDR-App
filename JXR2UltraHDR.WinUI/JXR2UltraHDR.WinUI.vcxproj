@@ -117,6 +117,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\JXR2UltraHDR-lib\build\Release;$(SolutionDir)ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\Release;$(SolutionDir)ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\turbojpeg\src\turbojpeg-build\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>JXR2UltraHDR_core.lib;jxrlib.lib;uhdr-static.lib;core.lib;image_io.lib;jpeg-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>%(AdditionalOptions) /NODEFAULTLIB:LIBCMT</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup Condition="'$(WindowsPackageType)'!='None' and Exists('Package.appxmanifest')">

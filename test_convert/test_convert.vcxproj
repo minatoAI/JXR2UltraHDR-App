@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{ABCD1234-1234-1234-1234-123456789ABC}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <OutDir>$(ProjectDir)bin\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)obj\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\ThirdParty\JXR2UltraHDR-lib\src;..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\libultrahdr;..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\jxrlib\common\include;..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\jxrlib\image\sys;..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\jxrlib\jxrgluelib</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>JXR2UltraHDR_core.lib;uhdr-static.lib;core.lib;image_io.lib;turbojpeg-static.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\ThirdParty\JXR2UltraHDR-lib\build\Release;..\ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\Release;..\ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\turbojpeg\src\turbojpeg-build\Release</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="test_convert2.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
