@@ -1,4 +1,0 @@
-@echo off
-call "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat" -arch=amd64
-cd /d "C:\Users\20506\source\repos\JXR2UltraHDR-App\test_convert"
-cl /EHsc /std:c++17 /I"..\ThirdParty\JXR2UltraHDR-lib\src" /I"..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\libultrahdr" /I"..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\jxrlib\common\include" /I"..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\jxrlib\image\sys" /I"..\ThirdParty\JXR2UltraHDR-lib\ThirdParty\jxrlib\jxrgluelib" /Fe:test_convert.exe test_convert.cpp ..\ThirdParty\JXR2UltraHDR-lib\build\Release\JXR2UltraHDR_core.lib ..\ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\Release\uhdr-static.lib ..\ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\Release\core.lib ..\ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\Release\image_io.lib ..\ThirdParty\JXR2UltraHDR-lib\build\uhdr_build\turbojpeg\src\turbojpeg-build\Release\turbojpeg-static.lib ..\ThirdParty\JXR2UltraHDR-lib\build\Release\JXR2UltraHDR_core.lib
